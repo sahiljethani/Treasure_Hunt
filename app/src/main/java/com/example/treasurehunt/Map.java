@@ -175,10 +175,10 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     private void setCameraView() {
 
-        double bottomBoundary = mCurrUserPos.getGeoPoint().getLatitude() - .1;
-        double leftBoundary = mCurrUserPos.getGeoPoint().getLongitude() - .1;
-        double topBoundary = mCurrUserPos.getGeoPoint().getLatitude() + .1;
-        double rightBoundary = mCurrUserPos.getGeoPoint().getLongitude() + .1;
+        double bottomBoundary = mCurrUserPos.getGeoPoint().getLatitude() - .01;
+        double leftBoundary = mCurrUserPos.getGeoPoint().getLongitude() - .01;
+        double topBoundary = mCurrUserPos.getGeoPoint().getLatitude() + .01;
+        double rightBoundary = mCurrUserPos.getGeoPoint().getLongitude() + .01;
 
         mMapBoundary = new LatLngBounds(
 
