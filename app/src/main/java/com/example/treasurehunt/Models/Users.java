@@ -5,9 +5,9 @@ import com.google.firebase.firestore.IgnoreExtraProperties;
 @IgnoreExtraProperties
 public class Users
 {
-       public  String username;
-       public String userid;
-       public String emailid;
+       private  String username;
+       private String userid;
+       private String emailid;
 
 
        public Users(String username, String userid, String emailid) {
