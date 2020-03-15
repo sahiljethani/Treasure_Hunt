@@ -27,15 +27,10 @@ import static com.example.treasurehunt.util.Constants.PERMISSIONS_REQUEST_ENABLE
 public class MainActivity extends AppCompatActivity {
 
 
-
     public void gotologin( View view ){
         Intent intent1 = new Intent(MainActivity.this, LoginActivity.class);
-
         startActivity(intent1);
-
     }
-
-
 
     private static final String TAG = "MAIN ACTIVITY";
     private boolean mLocationPermissionGranted=false;
@@ -165,10 +160,6 @@ public class MainActivity extends AppCompatActivity {
          else {
              getLocationPermission();
         }
-
-
-
-
 
         }
 
