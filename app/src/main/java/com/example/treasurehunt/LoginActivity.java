@@ -11,11 +11,16 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.example.treasurehunt.Models.Users;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.auth.User;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -23,7 +28,6 @@ public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private EditText mEmail, mPassword;
-   // private Button btnSignin,btnSignout,btnNewuser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,9 +37,7 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mEmail = findViewById(R.id.emailId);
        mPassword = findViewById(R.id.Password);
-      //  btnSignin = findViewById(R.id.btnSignin);
-      //  btnSignout =  findViewById(R.id.btnSignout);
-      //  btnNewuser = findViewById(R.id.btnNewuser);
+
     }
     @Override
     public void onStart() {
@@ -124,19 +126,46 @@ public class LoginActivity extends AppCompatActivity {
 
            if ( user!=null) {
 
-               Intent intent = new Intent(LoginActivity.this, Map.class);
-               startActivity(intent);
+               FirebaseFirestore db = FirebaseFirestore.getInstance();
+               String userid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+
+               DocumentReference newUser = db.collection("Users").document(userid);
+
+
+               newUser.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                   @Override
+                   public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                       if (task.isSuccessful()) {
+
+                           if(task.getResult()!=null) {
+
+
+                                   Users user=task.getResult().toObject(Users.class);
+
+                                     Log.d(TAG, "onComplete: User is added"+user.getUsername());
+                                     ((UserClient)(getApplicationContext())).setUser(user);
+
+
+
+                               }
+
+
+                           Intent intent = new Intent(LoginActivity.this, Map.class);
+                           startActivity(intent);
+
+
+                       }
+                   }
+               });
+
+
 
            }
 
 
 
-
-
-
-
     }
-
 
 
 }
