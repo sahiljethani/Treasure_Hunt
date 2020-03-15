@@ -130,6 +130,12 @@ public class NewProfile extends AppCompatActivity {
 
         Log.d(TAG, " Account and data are saved");
 
+        ((UserClient)(getApplicationContext())).setUser(user);
+
+
+        Log.d(TAG, "save: USER CLIENT "+user.getUsername());
+
+
 
 
         Intent intent = new Intent(NewProfile.this, Map.class);
