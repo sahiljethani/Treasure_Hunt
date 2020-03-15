@@ -5,15 +5,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 
 import com.example.treasurehunt.Models.UserLocation;
 import com.example.treasurehunt.Models.Users;
+import com.example.treasurehunt.Services.LocationService;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
@@ -23,6 +26,7 @@ import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -45,6 +49,8 @@ import static com.example.treasurehunt.util.Constants.MAPVIEW_BUNDLE_KEY;
 
 public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
+
+
     private FirebaseFirestore mDb;
 
     private FusedLocationProviderClient mFusedLocationClient;
@@ -58,6 +64,9 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     private GoogleMap mGooglemap;
     private LatLngBounds mMapBoundary;
     private UserLocation mCurrUserPos;
+    private Handler mHandler = new Handler();
+    private Runnable mRunnable;
+    private static final int LOCATION_UPDATE_INTERVAL = 3000;
 
 
 
@@ -94,6 +103,35 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     }
 
+
+
+    private void startLocationService(){
+        if(!isLocationServiceRunning()){
+            Intent serviceIntent = new Intent(this, LocationService.class);
+//        this.startService(serviceIntent);
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O){
+
+               Map.this.startForegroundService(serviceIntent);
+            }else{
+                startService(serviceIntent);
+            }
+        }
+    }
+
+    private boolean isLocationServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)){
+            if("com.codingwithmitch.googledirectionstest.services.LocationService".equals(service.service.getClassName())) {
+                Log.d(TAG, "isLocationServiceRunning: location service is already running.");
+                return true;
+            }
+        }
+        Log.d(TAG, "isLocationServiceRunning: location service is not running.");
+        return false;
+    }
+
+
     public void getUserFromFireStore() {
         Log.d(TAG, "getUserLocations: IT IS CALLED");
        mDb.collection("User Location")
@@ -115,7 +153,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                             printer();
                             setCurrUserPos();
                             setCameraView();
-                            setMarkers();
+                            startLocationService();
 
 
                         } else {
@@ -161,7 +199,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     }
 
-    private void setMarkers() {
+    /*private void setMarkers() {
 
         for ( UserLocation userLocation : ArrayUserLocation)
             mGooglemap.addMarker(new MarkerOptions()
@@ -169,7 +207,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                     .title(userLocation.getUser().getUsername()));
 
 
-    }
+    }*/
 
 
     private void setCameraView() {
@@ -217,6 +255,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                         Log.d(TAG, "onComplete: successfully set the user client.");
                         Users user = task.getResult().toObject(Users.class);
                         mUserLocation.setUser(user);
+                        ((UserClient)(getApplicationContext())).setUser(user);
                         getLastKnownLocation();
                     }
                 }
@@ -317,12 +356,93 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     }
 
 
+    private Marker mMarker;
+
+
+
+
+
+    private void startUserLocationsRunnable(){
+        Log.d(TAG, "startUserLocationsRunnable: starting runnable for retrieving updated locations.");
+        mHandler.postDelayed(mRunnable = new Runnable() {
+            @Override
+            public void run() {
+                retrieveUserLocations();
+                mHandler.postDelayed(mRunnable, LOCATION_UPDATE_INTERVAL);
+            }
+        }, LOCATION_UPDATE_INTERVAL);
+    }
+
+    private void stopLocationUpdates(){
+        mHandler.removeCallbacks(mRunnable);
+    }
+
+    private void retrieveUserLocations(){
+        Log.d(TAG, "retrieveUserLocations: retrieving location of all users in the chatroom.");
+
+        try{
+            for(final UserLocation userLocation : ArrayUserLocation){
+
+                DocumentReference userLocationRef = FirebaseFirestore.getInstance()
+                        .collection("User Location")
+                        .document(userLocation.getUser().getUserid());
+
+                userLocationRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                        if(task.isSuccessful()){
+
+                            final UserLocation updatedUserLocation = task.getResult().toObject(UserLocation.class);
+
+                            // update the location
+
+                                try {
+                                    if (userLocation.getUser().getUserid().equals(updatedUserLocation.getUser().getUserid())) {
+
+                                        LatLng updatedLatLng = new LatLng(
+                                                updatedUserLocation.getGeoPoint().getLatitude(),
+                                                updatedUserLocation.getGeoPoint().getLongitude()
+
+                                        );
+
+                                        if(mMarker!=null)
+                                            mMarker.remove();
+
+                                        mMarker= mGooglemap.addMarker(new MarkerOptions()
+                                                .position(updatedLatLng)
+                                                .title(userLocation.getUser().getUsername()));
+                                        mMarker.setVisible(true);
+
+
+
+                                    }
+
+
+                                } catch (NullPointerException e) {
+                                    Log.e(TAG, "retrieveUserLocations: NullPointerException: " + e.getMessage());
+                                }
+
+                        }
+                    }
+                });
+            }
+        }catch (IllegalStateException e){
+            Log.e(TAG, "retrieveUserLocations: Fragment was destroyed during Firestore query. Ending query." + e.getMessage() );
+        }
+
+    }
+
+
 
 
     @Override
     public  void onResume() {
         super.onResume();
         mMapView.onResume();
+        startUserLocationsRunnable();
+
+
+
     }
 
     @Override
@@ -354,6 +474,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     public void onDestroy() {
         mMapView.onDestroy();
         super.onDestroy();
+        stopLocationUpdates();
     }
 
     @Override

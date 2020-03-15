@@ -27,6 +27,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.io.IOException;
 import de.hdodenhof.circleimageview.CircleImageView;
 
+
 public class NewProfile extends AppCompatActivity {
 
     private static final String TAG = "NewProfile";
