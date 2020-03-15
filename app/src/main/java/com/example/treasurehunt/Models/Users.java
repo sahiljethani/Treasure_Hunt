@@ -8,12 +8,15 @@ public class Users
        private  String username;
        private String userid;
        private String emailid;
+       private String profileImageUrl;
 
 
-       public Users(String username, String userid, String emailid) {
+
+       public Users(String username, String userid, String emailid, String profileImageUrl) {
               this.username = username;
               this.userid = userid;
               this.emailid = emailid;
+              this.profileImageUrl=profileImageUrl;
        }
 
        public Users()
@@ -45,4 +48,8 @@ public class Users
        public void setEmailid(String emailid) {
               this.emailid = emailid;
        }
+
+       public String getProfileImageUrl() { return profileImageUrl; }
+
+       public void setProfileImageUrl(String profileImageUrl) { this.profileImageUrl = profileImageUrl; }
 }

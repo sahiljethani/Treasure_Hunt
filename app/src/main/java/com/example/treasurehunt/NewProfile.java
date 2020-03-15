@@ -19,12 +19,19 @@ import android.widget.Toast;
 import com.example.treasurehunt.Models.Users;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+
 import java.io.IOException;
+import java.util.UUID;
+
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
@@ -40,7 +47,6 @@ public class NewProfile extends AppCompatActivity {
     Button select_photo_bt;
     CircleImageView select_photo_view;
     Uri Imageuri;
-
 
 
     @Override
@@ -65,6 +71,7 @@ public class NewProfile extends AppCompatActivity {
         startActivityForResult(Intent.createChooser(intent,"Select Photo"),1);
 
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if(requestCode==1 && resultCode== Activity.RESULT_OK && data!=null) {
@@ -82,16 +89,45 @@ public class NewProfile extends AppCompatActivity {
         }
     }
 
+public void uploadImage() {
+        if(Imageuri==null) return;
+        String filename= UUID.randomUUID().toString();
 
+    final StorageReference ref= FirebaseStorage.getInstance().getReference("/images/"+filename);
+     ref.putFile(Imageuri)
+             .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                 @Override
+                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                     Log.d(TAG,"Image Uploaded: "+taskSnapshot.getMetadata().getPath());
+
+                     ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                         @Override
+                         public void onSuccess(Uri uri) {
+                             Log.d(TAG,"Image url is :" +uri);
+                             save(email,password,uri.toString());
+
+
+                         }
+                     });
+
+                 }
+             }).addOnFailureListener(new OnFailureListener() {
+         @Override
+         public void onFailure(@NonNull Exception e) {
+             Log.d(TAG,"Failed to upload Image"+e.getMessage());
+
+         }
+     });
+
+    }
 
 
     public void createAccount(View view) {
 
-
-
         email = mEmail.getText().toString();
         password = mPassword.getText().toString();
         username = mUsername.getText().toString();
+
 
 
         if (!validateForm(email, password, username)) {
@@ -105,7 +141,9 @@ public class NewProfile extends AppCompatActivity {
                             if (task.isSuccessful()) {
                                 // Sign in success, update UI with the signed-in user's information
                                 Log.d(TAG, "createUserWithEmail:success");
-                                save(email,username);
+                                uploadImage();
+                              //  save(email,username);
+
 
                             } else {
                                 // If sign in fails, display a message to the user.
@@ -127,7 +165,7 @@ public class NewProfile extends AppCompatActivity {
     }
 
 
-    public void save(String email,String username) {
+    public void save(String email,String username, String profileImageUrl) {
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String userid = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -143,6 +181,7 @@ public class NewProfile extends AppCompatActivity {
         user.setEmailid(email);
         user.setUserid(userid);
         user.setUsername(username);
+        user.setProfileImageUrl(profileImageUrl);
 
         newUser.set(user).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
