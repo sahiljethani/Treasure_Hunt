@@ -104,7 +104,7 @@ public void uploadImage() {
                          @Override
                          public void onSuccess(Uri uri) {
                              Log.d(TAG,"Image url is :" +uri);
-                             save(email,password,uri.toString());
+                             save(email,username,uri.toString());
 
 
                          }
