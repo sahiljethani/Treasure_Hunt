@@ -8,11 +8,18 @@ import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 
 import com.example.treasurehunt.Models.UserLocation;
 import com.example.treasurehunt.Models.Users;
@@ -24,6 +31,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -42,7 +51,14 @@ import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 
 import static com.example.treasurehunt.util.Constants.MAPVIEW_BUNDLE_KEY;
@@ -68,15 +84,13 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     private Runnable mRunnable;
     private static final int LOCATION_UPDATE_INTERVAL = 3000;
 
-
-
-
-
     private MapView mMapView;
 
     private GeoPoint geoPoint;
 
     private ArrayList <UserLocation> ArrayUserLocation = new ArrayList<>();
+    private ArrayList <Marker> mMarkers = new ArrayList<>();
+    private ArrayList <Target> mtargets = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,14 +160,24 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 UserLocation userlocation=document.toObject(UserLocation.class);
                                 ArrayUserLocation.add(userlocation);
+
+                                Marker marker=mGooglemap.addMarker(new MarkerOptions()
+                                        .position(new LatLng(userlocation.getGeoPoint().getLatitude(),userlocation.getGeoPoint().getLongitude()))
+                                        .title(userlocation.getUser().getUsername()));
+                                mMarkers.add(marker);
+
+
                                 Log.d(TAG, "onComplete: User is added"+ userlocation.getUser().getUsername());
 
                             }  }
 
                             printer();
+                            setMarkerIcon();
                             setCurrUserPos();
                             setCameraView();
                             startLocationService();
+
+
 
 
                         } else {
@@ -199,6 +223,35 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     }
 
+    private void setMarkerIcon() {
+
+
+        for(UserLocation userlocation: ArrayUserLocation)
+        {
+            for( Marker marker : mMarkers)
+            {
+                if(marker.getTitle().equals(userlocation.getUser().getUsername()))
+                {
+                    Target target = new PicassoMarker(marker);
+                    mtargets.add(target);
+                    Picasso.get().load(userlocation.getUser().getProfileImageUrl()).resize(84, 125).into(target);
+
+
+                }
+
+
+            }
+
+
+
+        }
+
+    }
+
+
+
+
+
     /*private void setMarkers() {
 
         for ( UserLocation userLocation : ArrayUserLocation)
@@ -226,17 +279,6 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
         mGooglemap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary, 0));
     }
-
-
-
-
-
-
-
-
-
-    
-
 
 
 
@@ -356,7 +398,6 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     }
 
 
-    private Marker mMarker;
 
 
 
@@ -405,13 +446,17 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
                                         );
 
-                                        if(mMarker!=null)
-                                            mMarker.remove();
+                                        addingMarkers(userLocation,updatedLatLng);
 
-                                        mMarker= mGooglemap.addMarker(new MarkerOptions()
+                                       /* Mar
+
+                                        if(marker!=null)
+                                            marker.remove();
+
+                                        marker= mGooglemap.addMarker(new MarkerOptions()
                                                 .position(updatedLatLng)
                                                 .title(userLocation.getUser().getUsername()));
-                                        mMarker.setVisible(true);
+                                        marker.setVisible(true);*/
 
 
 
@@ -428,6 +473,22 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
             }
         }catch (IllegalStateException e){
             Log.e(TAG, "retrieveUserLocations: Fragment was destroyed during Firestore query. Ending query." + e.getMessage() );
+        }
+
+    }
+
+
+    private void addingMarkers(UserLocation userLocation, LatLng updatedLatLng ){
+
+        for( Marker marker:mMarkers)
+        {
+            if(marker.getTitle().equals(userLocation.getUser().getUsername()))
+            {
+
+             marker.setPosition(updatedLatLng);
+
+            }
+
         }
 
     }
