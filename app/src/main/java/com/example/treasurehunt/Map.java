@@ -279,7 +279,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                                 stopLocationUpdates();
                                 UserLocation userlocation = dc.getDocument().toObject(UserLocation.class);
 
-                                if (ArrayUserLocation.isEmpty() || (!ArrayUserLocation.contains(userlocation))) {
+                                if (ArrayUserLocation.isEmpty() ||(!isExisitingUserlocation(userlocation))) {
                                     ArrayUserLocation.add(userlocation);
                                     Log.d(TAG, "Adding the user in the list  " + userlocation.getUser().getUsername());
 
@@ -295,6 +295,10 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
                                 }
 
+
+
+                                }
+
                             }
 
 
@@ -304,11 +308,33 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
 
 
-                    }
+
                 });
 
 
     }
+
+    private boolean isExisitingUserlocation(UserLocation userlocation) {
+
+        int flag=0;
+
+        for(UserLocation ExisitingUserlocation: ArrayUserLocation)
+        {
+            if(ExisitingUserlocation.getUser().getUserid().equals(userlocation.getUser().getUserid()))
+                flag=1;
+            else
+                flag=0;
+
+
+        }
+
+        return flag == 1;
+
+
+    }
+
+
+
 
 
 
