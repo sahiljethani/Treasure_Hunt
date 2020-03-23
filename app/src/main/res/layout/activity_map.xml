@@ -13,16 +13,23 @@
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="90"
+        android:layout_weight="80"
         tools:layout_editor_absoluteX="154dp"
         tools:layout_editor_absoluteY="160dp" />
+
+    <Button
+        android:id="@+id/btnHideTreasure"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="10"
+        android:onClick="HideTheTreasure"
+        android:text="Hide The Treasure" />
 
     <Button
         android:id="@+id/signout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="10"
-        android:fontFamily="sans-serif-smallcaps"
         android:onClick="signOut"
         android:text="Sign Out" />
 
