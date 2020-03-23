@@ -39,14 +39,14 @@ public class LoginActivity extends AppCompatActivity {
        mPassword = findViewById(R.id.Password);
 
     }
-    @Override
+   /* @Override
     public void onStart() {
         Log.d(TAG, "onStart: I am here");
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
         updateUI(currentUser);
-    }
+    }*/
 
 
 
