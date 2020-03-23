@@ -65,6 +65,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static com.example.treasurehunt.util.Constants.MAPVIEW_BUNDLE_KEY;
@@ -271,13 +272,72 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                             return;
                         }
 
+
+                        if(snapshots!=null)
+                        {
+
+                            Log.d(TAG, "onEvent: -----------------------------------------------------");
+                            List<DocumentChange> documentChangeList=snapshots.getDocumentChanges();
+                            for ( DocumentChange documentChange: documentChangeList)
+                            {
+                                Log.d(TAG, "onEvent: THE TYPE OF CHANGE IS "+documentChange.getType());
+                                String source = snapshots.getMetadata().hasPendingWrites()
+                                        ? "Local" : "Server";
+                                Log.d(TAG, "onEvent: THE SOURCE OF THIS CHANGE IS "+source);
+
+                                if (documentChange.getType() == DocumentChange.Type.ADDED) {
+                                    stopLocationUpdates();
+                                    UserLocation userlocation = documentChange.getDocument().toObject(UserLocation.class);
+
+
+                                    //if (ArrayUserLocation.isEmpty() ||(!isExisitingUserlocation(userlocation))) {
+                                        ArrayUserLocation.add(userlocation);
+                                        Log.d(TAG, "Adding the user in the list  " + userlocation.getUser().getUsername());
+
+                                        Marker marker = mGooglemap.addMarker(new MarkerOptions()
+                                                .position(new LatLng(userlocation.getGeoPoint().getLatitude(), userlocation.getGeoPoint().getLongitude()))
+                                                .title(userlocation.getUser().getUsername()));
+                                        if (userlocation == mUserLocation)
+                                            marker.setSnippet("ONLINE");
+                                        mMarkers.add(marker);
+                                        if (setUserMarkerIcon()) {
+                                            startUserLocationsRunnable();
+                                        }
+
+                                    }
+
+
+
+
+                            }
+
+
+
+
+
+
+                        }
+                        else{
+
+
+                            Log.d(TAG, "onEvent: QUERY SNAPSHOT IS NULL");
+                        }
+
+
+
+
+
+
+                       /* if(!snapshots.getMetadata().isFromCache()){
+
                         for (DocumentChange dc : snapshots.getDocumentChanges()) {
 
-                            Log.d(TAG, "onEvent: The Change Type is" + dc.getType());
+                            Log.d(TAG, "onEvent: The Change Type is " + dc.getType());
 
                             if (dc.getType() == DocumentChange.Type.ADDED) {
                                 stopLocationUpdates();
                                 UserLocation userlocation = dc.getDocument().toObject(UserLocation.class);
+
 
                                 if (ArrayUserLocation.isEmpty() ||(!isExisitingUserlocation(userlocation))) {
                                     ArrayUserLocation.add(userlocation);
@@ -300,6 +360,13 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                                 }
 
                             }
+                    }*/
+
+
+
+
+
+
 
 
                             Log.d(TAG, "onEvent: Array size of user is " + ArrayUserLocation.size() + " SIZE OF MARKER IS " + mMarkers.size());
@@ -314,7 +381,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     }
 
-    private boolean isExisitingUserlocation(UserLocation userlocation) {
+   /* private boolean isExisitingUserlocation(UserLocation userlocation) {
 
         int flag=0;
 
@@ -331,7 +398,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         return flag == 1;
 
 
-    }
+    }*/
 
 
 
