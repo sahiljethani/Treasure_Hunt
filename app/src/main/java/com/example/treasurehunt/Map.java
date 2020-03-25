@@ -529,7 +529,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
 
     }
     private void getTreasureFromFirebase() {
-        Log.d(TAG, "getTreasureFromFirebase: IS called");
+        Log.d(TAG, "getTreasureFromFirebase: is called now ");
 
 
         mDb.collection("Treasures")
