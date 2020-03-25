@@ -70,7 +70,7 @@ import java.util.UUID;
 
 import static com.example.treasurehunt.util.Constants.MAPVIEW_BUNDLE_KEY;
 
-public class Map extends AppCompatActivity implements OnMapReadyCallback {
+public class Map extends AppCompatActivity implements OnMapReadyCallback, TreasureDialog.OnInputListener {
 
 
 
@@ -126,7 +126,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
         mMapView.getMapAsync(this);
         getUserDetails();
-      //  gettingTreasuresFromFirebase();
+        getTreasureFromFirebase();
 
 
 
@@ -280,17 +280,25 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                             List<DocumentChange> documentChangeList=snapshots.getDocumentChanges();
                             for ( DocumentChange documentChange: documentChangeList)
                             {
-                                Log.d(TAG, "onEvent: THE TYPE OF CHANGE IS "+documentChange.getType());
+                                Log.d(TAG, "USER: THE TYPE OF CHANGE IS "+documentChange.getType());
                                 String source = snapshots.getMetadata().hasPendingWrites()
                                         ? "Local" : "Server";
-                                Log.d(TAG, "onEvent: THE SOURCE OF THIS CHANGE IS "+source);
+                                Log.d(TAG, "USER: THE SOURCE OF THIS CHANGE IS "+source);
+
+                                String isCache = snapshots.getMetadata().isFromCache()?"true":"false";
+                                Log.d(TAG, "USER: The change is from cache?   " +isCache);
+
+                                Log.d(TAG, "USER: THE NAME OF THE NEW USER IS " + documentChange
+                                        .getDocument()
+                                        .toObject(UserLocation.class)
+                                         .getUser()
+                                          .getUsername());
 
                                 if (documentChange.getType() == DocumentChange.Type.ADDED) {
                                     stopLocationUpdates();
                                     UserLocation userlocation = documentChange.getDocument().toObject(UserLocation.class);
 
 
-                                    //if (ArrayUserLocation.isEmpty() ||(!isExisitingUserlocation(userlocation))) {
                                         ArrayUserLocation.add(userlocation);
                                         Log.d(TAG, "Adding the user in the list  " + userlocation.getUser().getUsername());
 
@@ -304,69 +312,14 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                                             startUserLocationsRunnable();
                                         }
 
-                                    }
-
-
-
-
+                                }
                             }
-
-
-
-
-
-
                         }
                         else{
 
 
                             Log.d(TAG, "onEvent: QUERY SNAPSHOT IS NULL");
                         }
-
-
-
-
-
-
-                       /* if(!snapshots.getMetadata().isFromCache()){
-
-                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
-
-                            Log.d(TAG, "onEvent: The Change Type is " + dc.getType());
-
-                            if (dc.getType() == DocumentChange.Type.ADDED) {
-                                stopLocationUpdates();
-                                UserLocation userlocation = dc.getDocument().toObject(UserLocation.class);
-
-
-                                if (ArrayUserLocation.isEmpty() ||(!isExisitingUserlocation(userlocation))) {
-                                    ArrayUserLocation.add(userlocation);
-                                    Log.d(TAG, "Adding the user in the list  " + userlocation.getUser().getUsername());
-
-                                    Marker marker = mGooglemap.addMarker(new MarkerOptions()
-                                            .position(new LatLng(userlocation.getGeoPoint().getLatitude(), userlocation.getGeoPoint().getLongitude()))
-                                            .title(userlocation.getUser().getUsername()));
-                                    if (userlocation == mUserLocation)
-                                        marker.setSnippet("ONLINE");
-                                    mMarkers.add(marker);
-                                    if (setUserMarkerIcon()) {
-                                        startUserLocationsRunnable();
-                                    }
-
-                                }
-
-
-
-                                }
-
-                            }
-                    }*/
-
-
-
-
-
-
 
 
                             Log.d(TAG, "onEvent: Array size of user is " + ArrayUserLocation.size() + " SIZE OF MARKER IS " + mMarkers.size());
@@ -380,133 +333,6 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
 
     }
-
-   /* private boolean isExisitingUserlocation(UserLocation userlocation) {
-
-        int flag=0;
-
-        for(UserLocation ExisitingUserlocation: ArrayUserLocation)
-        {
-            if(ExisitingUserlocation.getUser().getUserid().equals(userlocation.getUser().getUserid()))
-                flag=1;
-            else
-                flag=0;
-
-
-        }
-
-        return flag == 1;
-
-
-    }*/
-
-
-
-
-
-
-
-   /* public void getUserFromFireStore() {
-        Log.d(TAG, "getUserFromFireStore: IT IS CALLED");
-        mDb.collection("User Location")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-
-                            if(task.getResult()!=null) {
-
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-                                    UserLocation userlocation = document.toObject(UserLocation.class);
-
-                                    if(ArrayUserLocation.isEmpty())
-
-                                    {   ArrayUserLocation.add(userlocation);
-                                        Log.d(TAG, "Adding the user in the list  "+ userlocation.getUser().getUsername());
-
-                                        Marker marker = mGooglemap.addMarker(new MarkerOptions()
-                                                .position(new LatLng(userlocation.getGeoPoint().getLatitude(), userlocation.getGeoPoint().getLongitude()))
-                                                .title(userlocation.getUser().getUsername()));
-                                        mMarkers.add(marker);
-                                        Target target = new PicassoMarker(marker);
-                                        mtargets.add(target);
-                                        Picasso.get().load(userlocation.getUser().getProfileImageUrl()).resize(84, 125).into(target);
-
-
-
-                                    }
-                                    else {
-
-                                        for (UserLocation ExistingUserlocation : ArrayUserLocation) {
-                                            if ( !userlocation.getUser().getUserid().equals(ExistingUserlocation.getUser().getUserid())) {
-                                                Log.d(TAG, "New User Found");
-                                                ArrayUserLocation.add(userlocation);
-                                                Log.d(TAG, "Adding the user in the list  "+ userlocation.getUser().getUsername());
-
-                                                Marker marker = mGooglemap.addMarker(new MarkerOptions()
-                                                        .position(new LatLng(userlocation.getGeoPoint().getLatitude(), userlocation.getGeoPoint().getLongitude()))
-                                                        .title(userlocation.getUser().getUsername()));
-                                                mMarkers.add(marker);
-                                                Target target = new PicassoMarker(marker);
-                                                mtargets.add(target);
-                                                Picasso.get().load(userlocation.getUser().getProfileImageUrl()).resize(84, 125).into(target);
-
-                                            }
-
-
-                                        }
-
-
-                                    }
-
-                                    for (UserLocation ExistingUserlocation : ArrayUserLocation) {
-                                        if (ExistingUserlocation == null || userlocation != ExistingUserlocation) {
-                                            Log.d(TAG, "MAKING ARRAY ");
-                                            ArrayUserLocation.add(userlocation);
-
-                                            Marker marker = mGooglemap.addMarker(new MarkerOptions()
-                                                    .position(new LatLng(userlocation.getGeoPoint().getLatitude(), userlocation.getGeoPoint().getLongitude()))
-                                                    .title(userlocation.getUser().getUsername()));
-                                            mMarkers.add(marker);
-
-                                        }
-
-
-
-                                    }
-
-                                    Log.d(TAG, "onComplete: User is added" + userlocation.getUser().getUsername());
-
-                                }
-
-                                printer();
-                               // setCurrUserPos();
-                                //setCameraView();
-                              //  setUserMarkerIcon();
-                               // startLocationService();
-
-                            }
-
-                            retrieveUserLocations();
-
-                        } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
-                        }
-                    }
-                });
-    } */
-
-  /*  private void setCurrUserPos () {
-        for (UserLocation userlocation : ArrayUserLocation)
-            if(userlocation.getUser().getUserid().equals(FirebaseAuth.getInstance().getUid()))
-                mCurrUserPos=userlocation;
-
-
-
-
-    }*/
-
 
 
 
@@ -626,7 +452,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     //ALL the methods related to treasure
 
-    /*
+
 
     public void HideTheTreasure ( View view ){
 
@@ -682,7 +508,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         final Treasure treasure= new Treasure();
         treasure.setTreasureId(treasureId);
         treasure.setGeoPoint(treasureGeoPoint);
-        treasure.setUser(mCurrUserPos.getUser());
+        treasure.setUser(mUserLocation.getUser());
         treasure.setMessage(input);
 
         newTreasure.set(treasure).addOnCompleteListener(new OnCompleteListener<Void>() {
@@ -692,7 +518,6 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 if (task.isSuccessful()) {
 
                     Log.d(TAG, "onComplete: Treasure Added");
-                    gettingTreasuresFromFirebase();
 
 
                 } else
@@ -703,11 +528,81 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
 
     }
-    private void gettingTreasuresFromFirebase() {
+    private void getTreasureFromFirebase() {
+        Log.d(TAG, "getTreasureFromFirebase: IS called");
+
 
         mDb.collection("Treasures")
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot snapshots,
+                                        @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            Log.w("TAG", "listen:error", e);
+                            return;
+                        }
+
+
+                        if(snapshots!=null)
+                        {
+
+                            Log.d(TAG, "onEvent: -----------------------------------------------------");
+                            List<DocumentChange> documentChangeList=snapshots.getDocumentChanges();
+                            for ( DocumentChange documentChange: documentChangeList)
+                            {
+                                Log.d(TAG, "TREASURE: THE TYPE OF CHANGE IS "+documentChange.getType());
+                                String source = snapshots.getMetadata().hasPendingWrites()
+                                        ? "Local" : "Server";
+                                Log.d(TAG, "TREASURE: THE SOURCE OF THIS CHANGE IS "+source);
+
+                                String isCache = snapshots.getMetadata().isFromCache()?"true":"false";
+                                Log.d(TAG, "TREASURE: The change is from cache?   " +isCache);
+
+                                if (documentChange.getType() == DocumentChange.Type.ADDED) {
+
+                                    Treasure treasure=documentChange.getDocument().toObject(Treasure.class);
+
+
+
+                                    mtreasures.add(treasure);
+                                    Log.d(TAG, "Adding the treasure with the message  " + treasure.getMessage());
+
+                                    int height = 100;
+                                    int width = 100;
+                                    Bitmap b = BitmapFactory.decodeResource(getResources(), R.drawable.cross);
+                                    Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
+                                    BitmapDescriptor crossimage = BitmapDescriptorFactory.fromBitmap(smallMarker);
+
+                                    Marker marker= mGooglemap.addMarker(new MarkerOptions()
+                                                .position(new LatLng(treasure.getGeoPoint().getLatitude(),treasure.getGeoPoint().getLongitude()))
+                                                .title("Treasure")
+                                                .icon(crossimage));
+                                    marker.setTag(treasure);
+                                    marker.setVisible(true);
+
+
+                                }
+                            }
+                        }
+                        else{
+
+
+                            Log.d(TAG, "onEvent: QUERY SNAPSHOT IS NULL");
+                        }
+
+
+                        Log.d(TAG, "onEvent: Array size of treasure is " + mtreasures.size());
+
+                    }
+
+
+
+
+                });
+
+      /*  mDb.collection("Treasures")
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                .ad(new OnCompleteListener<QuerySnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
@@ -746,31 +641,9 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                             Log.d(TAG, "Error getting documents: ", task.getException());
                         }
                     }
-                });
+                });*/
 
     }
-
-
-
-   */
-
-
-
-
-
-
-
-
-
-
-
-   /* public void printer() {
-        Log.d(TAG, "printer: IS called");
-        for(UserLocation userlocation: ArrayUserLocation) {
-            Log.d(TAG, "Printer: user location "+ userlocation.getUser().getUsername() + ",,,"+ userlocation.getGeoPoint().getLatitude()+ "," + userlocation.getGeoPoint().getLongitude());
-        }
-
-    }*/
 
 
     public void signOut(View view) {
