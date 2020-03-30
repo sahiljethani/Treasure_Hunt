@@ -210,6 +210,7 @@ public void uploadImage() {
 
         Intent intent = new Intent(NewProfile.this, Map.class);
         startActivity(intent);
+        finish();
 
 
     }

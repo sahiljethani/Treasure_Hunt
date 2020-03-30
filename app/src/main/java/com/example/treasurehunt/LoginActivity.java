@@ -54,6 +54,7 @@ public class LoginActivity extends AppCompatActivity {
         Log.d(TAG, "createAccount: I AM HERE");
         Intent intent = new Intent(LoginActivity.this, NewProfile.class);
         startActivity(intent);
+        finish();
 
 
     }
@@ -153,6 +154,7 @@ public class LoginActivity extends AppCompatActivity {
 
                            Intent intent = new Intent(LoginActivity.this, Map.class);
                            startActivity(intent);
+                           finish();
 
 
                        }

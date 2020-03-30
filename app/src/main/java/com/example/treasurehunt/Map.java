@@ -41,6 +41,8 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.api.LogDescriptor;
 import com.google.firebase.auth.FirebaseAuth;
@@ -294,6 +296,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
                                          .getUser()
                                           .getUsername());
 
+
                                 if (documentChange.getType() == DocumentChange.Type.ADDED) {
                                     stopLocationUpdates();
                                     UserLocation userlocation = documentChange.getDocument().toObject(UserLocation.class);
@@ -340,7 +343,12 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
 
 
         for(UserLocation userlocation: ArrayUserLocation)
+
         {
+            Log.d(TAG, "DISTANCE: The distance between "+userlocation.getUser().getUsername()+ " and "
+            +mUserLocation.getUser().getUsername() + " is "+ distancebetween(userlocation.getGeoPoint(),mUserLocation.getGeoPoint()));
+
+
             for( Marker marker : mMarkers)
             {
 
@@ -406,7 +414,17 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
 
                                          );
 
+                                         userLocation.setGeoPoint(updatedUserLocation.getGeoPoint());
+
                                          UpdateMarkerPosition(userLocation, updatedLatLng);
+                                         if(updatedUserLocation.getUser().getUserid().equals(mUserLocation.getUser().getUserid())){
+                                             mUserLocation.setGeoPoint(updatedUserLocation.getGeoPoint());
+                                             if( findingAlgo())
+                                                Log.d(TAG, "onComplete: Moving On");
+
+
+                                         }
+
 
                                      }
 
@@ -558,9 +576,12 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
                                 String isCache = snapshots.getMetadata().isFromCache()?"true":"false";
                                 Log.d(TAG, "TREASURE: The change is from cache?   " +isCache);
 
+                                Treasure treasure=documentChange.getDocument().toObject(Treasure.class);
+
+
                                 if (documentChange.getType() == DocumentChange.Type.ADDED) {
 
-                                    Treasure treasure=documentChange.getDocument().toObject(Treasure.class);
+                                  //  Treasure treasure=documentChange.getDocument().toObject(Treasure.class);
 
 
 
@@ -574,14 +595,33 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
                                     BitmapDescriptor crossimage = BitmapDescriptorFactory.fromBitmap(smallMarker);
 
                                     Marker marker= mGooglemap.addMarker(new MarkerOptions()
-                                                .position(new LatLng(treasure.getGeoPoint().getLatitude(),treasure.getGeoPoint().getLongitude()))
-                                                .title("Treasure")
-                                                .icon(crossimage));
+                                            .position(new LatLng(treasure.getGeoPoint().getLatitude(),treasure.getGeoPoint().getLongitude()))
+                                            .title("Treasure")
+                                            .icon(crossimage));
                                     marker.setTag(treasure);
                                     marker.setVisible(true);
+                                    mTreasureMarkers.add(marker);
 
 
-                                }
+                                } else if(documentChange.getType() == DocumentChange.Type.REMOVED)
+                                   {
+                                    mtreasures.remove(treasure);
+                                    for (Marker marker : mTreasureMarkers) {
+
+                                        if (marker.getTag().equals(treasure)) {
+
+                                            mTreasureMarkers.remove(marker);
+                                            marker.remove();
+                                            break;
+
+                                        }
+                                    }
+
+
+
+                                   }
+
+
                             }
                         }
                         else{
@@ -596,55 +636,82 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
                     }
 
 
-
-
                 });
-
-      /*  mDb.collection("Treasures")
-                .get()
-                .ad(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-
-                            if(task.getResult()!=null) {
-
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-
-                                    Treasure treasure=document.toObject(Treasure.class);
-
-                                        int height = 100;
-                                        int width = 100;
-                                        Bitmap b = BitmapFactory.decodeResource(getResources(), R.drawable.cross);
-                                        Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
-                                        BitmapDescriptor crossimage = BitmapDescriptorFactory.fromBitmap(smallMarker);
-                                        for( Marker marker: mTreasureMarkers) {
-
-                                            Marker newmarker= mGooglemap.addMarker(new MarkerOptions()
-                                                    .position(new LatLng(treasure.getGeoPoint().getLatitude(),treasure.getGeoPoint().getLongitude()))
-                                                    .title("Treasure")
-                                                    .icon(crossimage));
-
-                                        if ()
-
-
-
-                                            mTreasureMarkers.add(marker);
-
-
-                                    }
-
-
-                                }  }
-
-                        } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
-                        }
-                    }
-                });*/
 
     }
 
+   public boolean findingAlgo(){
+       Log.d(TAG, "findingAlgo: is called");
+        if(!mtreasures.isEmpty()) {
+
+            for (Treasure treasure : mtreasures) {
+                Log.d(TAG, "findingAlgo: DISTANCE BETWEEN THE TREASURE ID " + treasure.getTreasureId() + " is "+ distancebetween(mUserLocation.getGeoPoint(), treasure.getGeoPoint()));
+                if ((distancebetween(mUserLocation.getGeoPoint(), treasure.getGeoPoint())<=2)
+                        && !(treasure.getUser().getUserid().equals(mUserLocation.getUser().getUserid())) &&(!treasure.getTreasureId().equals("done"))) {
+                    MessageDialog dialog = new MessageDialog(treasure);
+                    dialog.show(getSupportFragmentManager(), "Message Dialog");
+                    Log.d(TAG, "findingAlgo: THE MESSAGE IS " + treasure.getMessage());
+
+                    for (Marker marker : mTreasureMarkers) {
+
+                        if (marker.getTag().equals(treasure)) {
+                           // mTreasureMarkers.remove(marker);
+                            marker.setVisible(false);
+                            break;
+
+                        }
+                    }
+
+                    String treasureid=treasure.getTreasureId();
+                    treasure.setTreasureId("done");
+
+                    mDb.collection("Treasures").document(treasureid)
+                            .delete()
+                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    Log.d(TAG, "Treasure deleted! ");
+
+                                }
+                            })
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    Log.w(TAG, "Error deleting document", e);
+                                }
+                            });
+
+
+                }
+
+
+
+            }
+
+
+        }
+        
+        return true;
+
+    }
+
+    public float distancebetween(GeoPoint geoPointA,GeoPoint geoPointB){
+
+
+
+        Location locationA = new Location("point A");
+
+        locationA.setLatitude(geoPointA.getLatitude());
+        locationA.setLongitude(geoPointA.getLongitude());
+
+        Location locationB = new Location("point B");
+
+        locationB.setLatitude(geoPointB.getLatitude());
+        locationB.setLongitude(geoPointB.getLongitude());
+
+        return locationA.distanceTo(locationB);
+
+    }
 
     public void signOut(View view) {
         try {
@@ -674,6 +741,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback, Treasu
             Log.d(TAG, "updateUI: Here i am");
             Intent intent = new Intent(Map.this, LoginActivity.class);
             startActivity(intent);
+            finish();
         }
 
     }

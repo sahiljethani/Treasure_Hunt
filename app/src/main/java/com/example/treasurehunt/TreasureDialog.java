@@ -16,6 +16,7 @@ public class TreasureDialog extends DialogFragment {
 
     private static final String TAG = "Treasure Dialog";
 
+
     public interface OnInputListener{
         void sendInput(String input);
     }
@@ -59,6 +60,9 @@ public class TreasureDialog extends DialogFragment {
 
         return view;
     }
+
+
+
 
     @Override
     public void onAttach(Context context) {
